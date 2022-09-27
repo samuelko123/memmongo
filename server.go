@@ -17,7 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type MongoServer struct {
+type Server struct {
 	cmd    *exec.Cmd
 	port   int
 	client *mongo.Client
@@ -32,7 +32,7 @@ var (
 	reShuttingDown          = regexp.MustCompile("shutting down with code")
 )
 
-func (s *MongoServer) Start() error {
+func (s *Server) Start() error {
 	// name variables
 	var err error
 
@@ -99,7 +99,7 @@ func (s *MongoServer) Start() error {
 	return errors.New("mongod exited before startup completed")
 }
 
-func (s *MongoServer) NewDatabase() (*mongo.Database, error) {
+func (s *Server) NewDatabase() (*mongo.Database, error) {
 	// name variables
 	var err error
 	ctx := context.Background()
@@ -123,10 +123,10 @@ func (s *MongoServer) NewDatabase() (*mongo.Database, error) {
 	return db, nil
 }
 
-func (s *MongoServer) Stop() {
+func (s *Server) Stop() {
 	s.cmd.Process.Kill()
 }
 
-func (s *MongoServer) Port() int {
+func (s *Server) Port() int {
 	return s.port
 }
