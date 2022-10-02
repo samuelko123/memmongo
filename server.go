@@ -33,40 +33,33 @@ var (
 )
 
 func (s *Server) Start() error {
-	// name variables
 	var err error
 
-	// get mongod path
 	mongodPath := path.Join(os.Getenv("HOMEPATH"), ".mongod", "mongod.exe")
 	_, err = os.Stat(mongodPath)
 	if err != nil {
 		return fmt.Errorf("mongod binary does not exist - %s", mongodPath)
 	}
 
-	// create temp dir
 	dbDir, err := os.MkdirTemp(os.TempDir(), "")
 	if err != nil {
 		return errors.New("cannot create temp dir")
 	}
 
-	// get free port
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		return errors.New("cannot get new port")
 	}
 
-	// create cmd
 	args := []string{"--dbpath", dbDir, "--port", strconv.Itoa(port), "--storageEngine", "ephemeralForTest"}
 	s.cmd = exec.Command(mongodPath, args...)
 
-	// get stdout from cmd
 	stdout, err := s.cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
 	scanner := bufio.NewScanner(stdout)
 
-	// run the cmd
 	err = s.cmd.Start()
 	if err != nil {
 		return err
@@ -81,6 +74,14 @@ func (s *Server) Start() error {
 			if err != nil {
 				return fmt.Errorf("cannot parse port from mongod log line: %s", downcaseLine)
 			}
+
+			// collect output from stdout
+			// otherwise mongod will get stuck
+			go func() {
+				for scanner.Scan() {
+					scanner.Text()
+				}
+			}()
 
 			return nil
 		} else if reAlreadyInUse.MatchString(downcaseLine) {
